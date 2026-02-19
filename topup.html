@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AryaGames.com</title>
+<style>
+:root{
+  --bg:#0f172a;
+  --card:#1e293b;
+  --accent:#38bdf8;
+  --text:#f1f5f9;
+}
+.light{
+  --bg:#f1f5f9;
+  --card:#ffffff;
+  --accent:#2563eb;
+  --text:#0f172a;
+}
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:.3s;
+}
+header{
+  padding:20px;
+  text-align:center;
+  font-size:24px;
+  font-weight:bold;
+  background:var(--card);
+}
+.container{
+  max-width:900px;
+  margin:20px auto;
+  background:var(--card);
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 0 20px rgba(0,0,0,.3);
+}
+select,input{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:6px;
+  border:none;
+  font-size:14px;
+}
+button{
+  background:var(--accent);
+  border:none;
+  padding:12px;
+  width:100%;
+  color:white;
+  font-size:16px;
+  border-radius:6px;
+  cursor:pointer;
+}
+button:hover{
+  opacity:.8;
+}
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:10px;
+}
+.nominal{
+  background:#334155;
+  padding:10px;
+  text-align:center;
+  border-radius:6px;
+  cursor:pointer;
+}
+.nominal.active{
+  background:var(--accent);
+}
+.total{
+  font-size:18px;
+  margin-top:10px;
+}
+.history{
+  margin-top:20px;
+  font-size:13px;
+  max-height:200px;
+  overflow:auto;
+}
+.toggle{
+  position:fixed;
+  top:15px;
+  right:15px;
+  cursor:pointer;
+}
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.modal-content{
+  background:var(--card);
+  padding:20px;
+  border-radius:10px;
+  width:90%;
+  max-width:400px;
+}
+</style>
+</head>
+<body>
+
+<div class="toggle" onclick="toggleMode()">🌙</div>
+
+<header>🎮 GameTopup Pro</header>
+
+<div class="container">
+  <label>Pilih Game</label>
+  <select id="game">
+    <option value="">-- Pilih Game --</option>
+    <option>Mobile Legends</option>
+    <option>Free Fire</option>
+    <option>Genshin Impact</option>
+    <option>Valorant</option>
+    <option>Call of Duty</option>
+    <option>PUBG</option>
+    <option>Honor of Kings</option>
+  </select>
+
+  <label>User ID</label>
+  <input type="text" id="userid" placeholder="Masukkan User ID">
+
+  <label>Server</label>
+  <input type="text" id="server" placeholder="Masukkan Server (jika ada)">
+
+  <label>Pilih Nominal</label>
+  <div class="card-grid" id="nominals"></div>
+
+  <label>Metode Pembayaran</label>
+  <select id="payment">
+    <option>DANA</option>
+    <option>OVO</option>
+    <option>GoPay</option>
+    <option>Transfer Bank</option>
+  </select>
+
+  <div class="total" id="total">Total: Rp 0</div>
+  <button onclick="checkout()">Bayar Sekarang</button>
+
+  <div class="history">
+    <h3>Riwayat Transaksi</h3>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Invoice</h3>
+    <div id="invoice"></div>
+    <button onclick="closeModal()">Tutup</button>
+  </div>
+</div>
+
+<script>
+const nominalData = [5000,10000,20000,50000,100000];
+let selectedNominal = 0;
+
+const nominalContainer = document.getElementById("nominals");
+
+nominalData.forEach(n=>{
+  let div = document.createElement("div");
+  div.className="nominal";
+  div.innerText="Rp "+n.toLocaleString();
+  div.onclick=()=>{
+    document.querySelectorAll(".nominal").forEach(x=>x.classList.remove("active"));
+    div.classList.add("active");
+    selectedNominal=n;
+    updateTotal();
+  }
+  nominalContainer.appendChild(div);
+});
+
+function updateTotal(){
+  let admin = 2000;
+  let total = selectedNominal + admin;
+  document.getElementById("total").innerText="Total: Rp "+ total.toLocaleString();
+}
+
+function checkout(){
+  let game = document.getElementById("game").value;
+  let user = document.getElementById("userid").value;
+  if(!game || !user || !selectedNominal){
+    alert("Lengkapi data dulu!");
+    return;
+  }
+
+  let payment = document.getElementById("payment").value;
+  let total = selectedNominal + 2000;
+  let trx = {
+    game, user, total, payment, date:new Date().toLocaleString()
+  };
+
+  let history = JSON.parse(localStorage.getItem("trx")) || [];
+  history.push(trx);
+  localStorage.setItem("trx",JSON.stringify(history));
+  loadHistory();
+
+  document.getElementById("invoice").innerHTML=`
+    Game: ${game}<br>
+    User ID: ${user}<br>
+    Nominal: Rp ${selectedNominal.toLocaleString()}<br>
+    Admin: Rp 2.000<br>
+    Total: Rp ${total.toLocaleString()}<br>
+    Metode: ${payment}<br>
+    Tanggal: ${trx.date}
+  `;
+  document.getElementById("modal").style.display="flex";
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+function loadHistory(){
+  let history = JSON.parse(localStorage.getItem("trx")) || [];
+  let list="";
+  history.slice().reverse().forEach(h=>{
+    list+=`<div>${h.date} - ${h.game} - Rp ${h.total.toLocaleString()}</div>`;
+  });
+  document.getElementById("historyList").innerHTML=list;
+}
+loadHistory();
+
+function toggleMode(){
+  document.body.classList.toggle("light");
+}
+</script>
+
+</body>
+</html>
